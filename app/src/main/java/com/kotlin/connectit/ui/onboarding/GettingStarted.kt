@@ -16,7 +16,7 @@ import com.kotlin.connectit.R
 import com.kotlin.connectit_fe.ui.components.CustomButton
 
 @Composable
-fun OnboardingScreen(
+fun GettingStarted(
     onGetStartedClick: () -> Unit
 ) {
     Column(
@@ -32,14 +32,16 @@ fun OnboardingScreen(
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.bubble_onboard),
+                painter = painterResource(id = R.drawable.bubble_onboard2),
                 contentDescription = "Background Bubbles",
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(1f)
+                    .align(Alignment.TopStart)
+                    .offset(x = (-24).dp)
+
             )
             Text(
-                text = "Connect with your IT Buddy",
+                text = "Let's Get Started",
                 modifier = Modifier.width(250.dp),
                 color = Color.White,
                 fontSize = 48.sp,
@@ -56,7 +58,7 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.illustration1),
+                painter = painterResource(id = R.drawable.illustration2),
                 contentDescription = "Illustration",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -75,8 +77,8 @@ fun OnboardingScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun OnboardingScreenPreview() {
-    OnboardingScreen(
+fun GettingStartedPreview() {
+    GettingStarted (
         onGetStartedClick = {}
     )
 }
