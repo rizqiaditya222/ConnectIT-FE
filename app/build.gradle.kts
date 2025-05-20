@@ -40,9 +40,10 @@ android {
 }
 
 dependencies {
+    // Existing dependencies
     implementation("androidx.compose.ui:ui-text-google-fonts:1.6.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation ("io.coil-kt:coil-svg:2.5.0")
+    implementation("io.coil-kt:coil-svg:2.5.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -52,6 +53,12 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    // Add these explicit dependencies to fix the KeyEventDispatcher and MenuHost issues
+    implementation("androidx.core:core:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
+    // Test dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
