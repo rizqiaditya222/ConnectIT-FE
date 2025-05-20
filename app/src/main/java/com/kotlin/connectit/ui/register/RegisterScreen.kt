@@ -110,7 +110,7 @@ fun RegisterScreen(
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = Color(0xFF39007E)
+                            checkedColor = Color(0xFF1F222A)
                         )
                     )
                     Text("I agree with terms and condition", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Normal)
@@ -126,6 +126,7 @@ fun RegisterScreen(
                     Text("Already have an account? ", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Normal)
                     Text(
                         text = "Sign In",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Normal,
                         color = Color(0xFF8B5CF6),
                         modifier = Modifier.clickable { onRegisterClick() }

@@ -41,25 +41,23 @@ fun TextField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text(label, color = Color.Gray, fontSize = 13.sp) },
+            // label = { Text(label) },  <-- hapus ini
+            placeholder = { Text(label, color = Color.Gray, fontSize = 13.sp) },
             singleLine = true,
             visualTransformation = if (isPassword && !passwordVisible)
                 PasswordVisualTransformation() else VisualTransformation.None,
-            modifier = modifier
-                .fillMaxWidth(),
-//                .height(42.dp),
+            modifier = modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             colors = TextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF2A2A2F),
+                focusedContainerColor = Color(0xFF1F222A),
                 unfocusedContainerColor = Color(0xFF1F222A),
                 disabledContainerColor = Color(0xFF2A2A2F),
                 cursorColor = Color(0xFF8B5CF6),
                 focusedIndicatorColor = Color(0xFF8B5CF6),
                 unfocusedIndicatorColor = Color(0xFF1F222A),
-                focusedLabelColor = Color(0xFF8B5CF6),
-                unfocusedLabelColor = Color.Gray
+                // Tidak perlu label color karena label dihapus
             ),
             leadingIcon = {
                 Icon(
@@ -71,6 +69,7 @@ fun TextField(
             },
         )
 
-//        Spacer(modifier = Modifier.height(20.dp))
+
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }

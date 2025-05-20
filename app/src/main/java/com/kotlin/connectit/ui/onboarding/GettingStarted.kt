@@ -40,14 +40,25 @@ fun GettingStarted(
                     .offset(x = (-24).dp)
 
             )
-            Text(
-                text = "Let's Get Started",
+            Column(
                 modifier = Modifier.width(250.dp),
-                color = Color.White,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Let's",
+                    color = Color.White,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Get Started",
+                    color = Color.White,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -38,14 +38,28 @@ fun OnboardingScreen(
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
             )
-            Text(
-                text = "Connect with your IT Buddy",
-                modifier = Modifier.width(250.dp),
-                color = Color.White,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Connect",
+                    color = Color.White,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "with your",
+                    color = Color.White,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "IT Buddy",
+                    color = Color.White,
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
