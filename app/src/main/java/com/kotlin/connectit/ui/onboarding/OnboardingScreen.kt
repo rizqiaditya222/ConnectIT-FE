@@ -8,16 +8,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kotlin.connectit.R
 import com.kotlin.connectit_fe.ui.components.CustomButton
-
 @Composable
 fun OnboardingScreen(
-    onGetStartedClick: () -> Unit
+    onBoardingClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -65,7 +63,8 @@ fun OnboardingScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -79,18 +78,16 @@ fun OnboardingScreen(
             CustomButton(
                 text = "Continue",
                 modifier = Modifier.fillMaxWidth(),
+                onClick = onBoardingClick,
             )
         }
     }
 }
 
-
-
-
 @Preview(showBackground = true)
 @Composable
 fun OnboardingScreenPreview() {
     OnboardingScreen(
-        onGetStartedClick = {}
+        onBoardingClick = {}
     )
 }

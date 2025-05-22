@@ -10,11 +10,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CustomButton(
     text: String,
-//    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Button(
-        onClick = { },
+        onClick = onClick,
         modifier = modifier.height(42.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF39007E)

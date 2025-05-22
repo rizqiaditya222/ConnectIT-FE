@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,11 +29,10 @@ import androidx.compose.ui.unit.sp
 import com.kotlin.connectit_fe.ui.components.CustomButton
 import com.kotlin.connectit.R
 
-@Preview(showBackground = true)
 @Composable
 fun LoginScreen(
-    onLoginClick: () -> Unit = {},
-    onRegisterClick: () -> Unit = {}
+    onLoginClick: () -> Unit,
+    onRegisterClick: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -42,7 +40,7 @@ fun LoginScreen(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()  // Changed to fillMaxSize to ensure it fills the whole screen
             .background(Color(0xFF191A1F))
     ) {
         Column(
@@ -58,7 +56,8 @@ fun LoginScreen(
                     contentDescription = "Background Bubbles",
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth(.9f).padding(end = 16.dp, bottom = 32.dp)
+                        .fillMaxWidth(.9f)
+                        .padding(end = 16.dp, bottom = 32.dp)
                 )
 
                 Text(
@@ -67,7 +66,8 @@ fun LoginScreen(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier
-                        .align(Alignment.Center).padding(top = 100.dp)
+                        .align(Alignment.Center)
+                        .padding(top = 100.dp)
                 )
             }
 
@@ -94,26 +94,42 @@ fun LoginScreen(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
                     Checkbox(
                         checked = rememberMe,
                         onCheckedChange = { rememberMe = it },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = Color(0xFF1F222A)
+                            checkedColor = Color(0xFF1F222A),
+                            uncheckedColor = Color.Gray
                         )
                     )
                     Text("Remember me", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Normal)
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
                 CustomButton(
                     text = "Login",
                     modifier = Modifier.fillMaxWidth(),
-//                    onClick = onLoginClick
+                    onClick = {
+                        println("Login button pressed")
+                        // Call the navigation callback directly
+                        onLoginClick()
+                    }
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
+
                 Row {
-                    Text("Don't have an account? ", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Normal)
+                    Text(
+                        "Don't have an account? ",
+                        color = Color.Gray,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Normal
+                    )
                     Text(
                         text = "Sign up",
                         fontSize = 13.sp,
@@ -122,8 +138,6 @@ fun LoginScreen(
                         modifier = Modifier.clickable { onRegisterClick() }
                     )
                 }
-
-
             }
         }
     }

@@ -78,13 +78,11 @@ fun GettingStarted(
             CustomButton(
                 text = "Continue",
                 modifier = Modifier.fillMaxWidth(),
+                onClick = onGetStartedClick,
             )
         }
     }
 }
-
-
-
 
 @Preview(showBackground = true)
 @Composable
