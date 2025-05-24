@@ -1,46 +1,65 @@
+package com.kotlin.connectit.ui.login
+
+import MainTextField
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kotlin.connectit_fe.ui.components.CustomButton
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kotlin.connectit.R
+import com.kotlin.connectit.util.ResultWrapper
+import com.kotlin.connectit_fe.ui.components.CustomButton
 
 @Composable
 fun LoginScreen(
-    onLoginClick: () -> Unit,
+    viewModel: LoginViewModel = hiltViewModel(),
+    onSuccessfulLogin: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(key1 = uiState.loginResult) {
+        when (val result = uiState.loginResult) {
+            is ResultWrapper.Success -> {
+                Toast.makeText(context, "Login Berhasil!", Toast.LENGTH_SHORT).show()
+                viewModel.consumeLoginResult()
+                onSuccessfulLogin()
+            }
+            is ResultWrapper.Error -> {
+                Toast.makeText(context, result.message ?: "Login Gagal (Kode: ${result.code})", Toast.LENGTH_LONG).show()
+                viewModel.consumeLoginResult() // Reset state
+            }
+            null -> { /* Initial state atau sudah dikonsumsi */ }
+        }
+    }
+
+    // Handle general error messages (e.g., validation)
+    LaunchedEffect(key1 = uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.consumeErrorMessage() // Reset state
+        }
+    }
 
     Box(
         modifier = Modifier
-            .fillMaxSize()  // Changed to fillMaxSize to ensure it fills the whole screen
+            .fillMaxSize()
             .background(Color(0xFF191A1F))
     ) {
         Column(
@@ -48,16 +67,16 @@ fun LoginScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1f) // Sesuaikan weight jika perlu
                     .fillMaxWidth()
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.bubble_login),
+                    painter = painterResource(id = R.drawable.bubble_login), // Pastikan drawable ini ada
                     contentDescription = "Background Bubbles",
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth(.9f)
-                        .padding(end = 16.dp, bottom = 32.dp)
+                        .padding(end = 16.dp, bottom = 16.dp) // Kurangi padding bawah agar gambar lebih terlihat
                 )
 
                 Text(
@@ -67,28 +86,30 @@ fun LoginScreen(
                     color = Color.White,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(top = 100.dp)
+                        .padding(bottom = 30.dp) // Naikkan teks Login sedikit
                 )
             }
 
             Column(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1.1f)
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextField(
+                Spacer(modifier = Modifier.height(8.dp))
+
+                MainTextField(
                     label = "Email",
-                    value = email,
-                    onValueChange = { email = it }
+                    value = uiState.email,
+                    onValueChange = { viewModel.onEmailChanged(it) }
                 )
 
-                TextField(
+                MainTextField(
                     label = "Password",
-                    value = password,
-                    onValueChange = { password = it },
+                    value = uiState.password,
+                    onValueChange = { viewModel.onPasswordChanged(it) },
                     isPassword = true
                 )
 
@@ -99,25 +120,23 @@ fun LoginScreen(
                         .padding(vertical = 8.dp)
                 ) {
                     Checkbox(
-                        checked = rememberMe,
-                        onCheckedChange = { rememberMe = it },
+                        checked = uiState.rememberMe,
+                        onCheckedChange = { viewModel.onRememberMeChanged(it) },
                         colors = CheckboxDefaults.colors(
-                            checkedColor = Color(0xFF1F222A),
-                            uncheckedColor = Color.Gray
+                            checkedColor = Color(0xFF8B5CF6),
+                            uncheckedColor = Color.Gray,
+                            checkmarkColor = Color.White
                         )
                     )
                     Text("Remember me", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Normal)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
                 CustomButton(
-                    text = "Login",
+                    text = if (uiState.isLoading) "Logging in..." else "Login",
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        println("Login button pressed")
-                        // Call the navigation callback directly
-                        onLoginClick()
+                        viewModel.attemptLogin()
                     }
                 )
 
@@ -135,10 +154,18 @@ fun LoginScreen(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Normal,
                         color = Color(0xFF8B5CF6),
-                        modifier = Modifier.clickable { onRegisterClick() }
+                        modifier = Modifier.clickable(onClick = onRegisterClick)
                     )
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
+        }
+
+        if (uiState.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = Color(0xFF8B5CF6)
+            )
         }
     }
 }

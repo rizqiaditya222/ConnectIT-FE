@@ -1,185 +1,209 @@
+package com.kotlin.connectit.ui.profile
 
+import MainTextField
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kotlin.connectit.R
+import com.kotlin.connectit.ui.completeProfile.CompleteProfileViewModel
+import com.kotlin.connectit.util.ResultWrapper
 import com.kotlin.connectit_fe.ui.components.CustomButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompleteProfile(
-    onRegisterClick: () -> Unit,
-    onLoginClick: () -> Unit
+fun CompleteProfileScreen(
+    viewModel: CompleteProfileViewModel = hiltViewModel(),
+    onProfileCompleted: () -> Unit,
+    onSkipOrNavigate: () -> Unit,
+    onBackClick: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var repeatPassword by remember { mutableStateOf("") }
-    var agreeToTerms by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    Box(
-        modifier = Modifier
-            .background(Color(0xFF191A1F))
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+    LaunchedEffect(key1 = uiState.updateProfileResult) {
+        when (val result = uiState.updateProfileResult) {
+            is ResultWrapper.Success -> {
+                Toast.makeText(context, "Profil berhasil diperbarui", Toast.LENGTH_SHORT).show()
+                viewModel.consumeUpdateResult()
+                onProfileCompleted()
+            }
+            is ResultWrapper.Error -> {
+                Toast.makeText(context, result.message ?: "Update profil gagal", Toast.LENGTH_LONG).show()
+                viewModel.consumeUpdateResult()
+            }
+            null -> { /* Initial or consumed */ }
+        }
+    }
 
+    // Handle general error messages
+    LaunchedEffect(key1 = uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.consumeErrorMessage()
+        }
+    }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .fillMaxSize()
-                    .weight(1f)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.bubble_register),
-                    contentDescription = "Background Bubbles",
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth(0.9f)
-                        .padding(end = 16.dp, bottom = 32.dp)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Complete your profile", color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                },
+                actions = {
+                    TextButton(onClick = onSkipOrNavigate) {
+                        Text("Skip", color = Color(0xFFBB86FC)) // Warna ungu muda untuk "Skip"
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF191A1F) // Warna background TopAppBar
                 )
-
-                Column {
-                    Row(
+            )
+        },
+        containerColor = Color(0xFF191A1F) // Warna background utama
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (uiState.isLoading && !uiState.isProfileLoaded) { // Loading data awal
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFF8B5CF6)
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp)
+                        .padding(top = 24.dp), // Padding atas setelah TopAppBar
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Placeholder Foto Profil
+                    Box(
+                        contentAlignment = Alignment.BottomEnd,
                         modifier = Modifier
-//                            .align(Alignment.TopStart)
-                            .fillMaxWidth()
-                            .padding(top = 32.dp, start = 24.dp, end = 24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(Color.DarkGray) // Warna placeholder
+                            .border(2.dp, Color(0xFF8B5CF6), CircleShape)
+                            .clickable { /* TODO: Handle ganti foto */ }
                     ) {
-                        Row(modifier = Modifier) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White,
-                                modifier = Modifier.padding(end = 10.dp)
-
-                            )
-
-                            Text(
-                                text = "Complete your profile",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = Color.White,
-                            )
-                        }
-
-                        Text(
-                            text = "Skip",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color(0xFF39007E),
-                            modifier = Modifier.clickable {
-                                onLoginClick()
-                            }
+                        Image(
+                            painter = painterResource(id = R.drawable.bubble_login),
+                            contentDescription = "Profile Picture Placeholder",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Change Photo",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(30.dp)
+                                .background(Color(0xFF8B5CF6), CircleShape)
+                                .padding(4.dp)
                         )
                     }
-                    Card (modifier = Modifier) {
 
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(
+                                Color(0xFF1F222A),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = "Email Icon",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = uiState.email.ifEmpty { "Email tidak tersedia" },
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
                     }
-                }
+                    Spacer(modifier = Modifier.height(12.dp)) // Spasi antar field
 
+                    // Input Username
+                    MainTextField(
+                        label = "Username",
+                        value = uiState.username,
+                        onValueChange = { viewModel.onUsernameChanged(it) },
+                        leadingIcon = Icons.Default.Person
+                    )
+
+                    Text(
+                        text = "Field lain seperti nama lengkap, nomor telepon, dll. akan dapat diisi pada versi mendatang setelah pembaruan sistem.",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 24.dp)
+                    )
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    CustomButton(
+                        text = if (uiState.isLoading && uiState.isProfileLoaded) "Saving..." else "Finish",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 24.dp),
+                        onClick = {
+                            viewModel.attemptSaveProfile()
+                        }
+                    )
+                }
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                TextField(
-                    label = "Username",
-                    value = email,
-                    onValueChange = { email = it },
-                    leadingIcon = Icons.Default.Person
+            if (uiState.isLoading && uiState.isProfileLoaded) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFF8B5CF6)
                 )
-
-                TextField(
-                    label = "Full Name",
-                    value = password,
-                    onValueChange = { password = it },
-                    leadingIcon = Icons.Default.Person
-                )
-
-                TextField(
-                    label = "Phone Number",
-                    value = repeatPassword,
-                    onValueChange = { repeatPassword = it },
-                    leadingIcon = Icons.Default.Phone
-                )
-                TextField(
-                    label = "Birth Date",
-                    value = repeatPassword,
-                    onValueChange = { repeatPassword = it },
-                    leadingIcon = Icons.Default.DateRange
-                )
-
-                TextField(
-                    label = "Address",
-                    value = password,
-                    onValueChange = { password = it },
-                    leadingIcon = Icons.Default.LocationOn
-                )
-
             }
-
-            CustomButton(
-                text = "Finish",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                onClick = {
-                    println("Register button pressed")
-                    onRegisterClick()
-                }
-            )
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun CompleteProfilePreview() {
-    CompleteProfile(
-        onRegisterClick = {},
-        onLoginClick = {}
-    )
+fun CompleteProfileScreenPreview() {
+    MaterialTheme {
+        CompleteProfileScreen(
+            onProfileCompleted = {},
+            onSkipOrNavigate = {},
+            onBackClick = {}
+        )
+    }
 }

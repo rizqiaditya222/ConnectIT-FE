@@ -24,13 +24,14 @@
     import androidx.compose.ui.text.input.VisualTransformation
     import androidx.compose.ui.unit.dp
     import androidx.compose.ui.unit.sp
+
     @Composable
-    fun TextField(
+    fun MainTextField(
         label: String,
         value: String,
         onValueChange: (String) -> Unit,
         isPassword: Boolean = false,
-        leadingIcon: ImageVector? = null, // Tambahkan parameter icon opsional
+        leadingIcon: ImageVector? = null,
         modifier: Modifier = Modifier
     ) {
         var passwordVisible by remember { mutableStateOf(false) }
