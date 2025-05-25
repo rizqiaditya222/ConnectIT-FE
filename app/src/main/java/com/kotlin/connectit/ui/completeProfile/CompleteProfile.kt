@@ -155,9 +155,8 @@ fun CompleteProfileScreen(
                             fontSize = 16.sp
                         )
                     }
-                    Spacer(modifier = Modifier.height(12.dp)) // Spasi antar field
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Input Username
                     MainTextField(
                         label = "Username",
                         value = uiState.username,
@@ -193,17 +192,5 @@ fun CompleteProfileScreen(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CompleteProfileScreenPreview() {
-    MaterialTheme {
-        CompleteProfileScreen(
-            onProfileCompleted = {},
-            onSkipOrNavigate = {},
-            onBackClick = {}
-        )
     }
 }

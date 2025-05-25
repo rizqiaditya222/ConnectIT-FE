@@ -1,67 +1,78 @@
-package com.kotlin.connectit.navigation // Ganti dengan package navigasi Anda
+package com.kotlin.connectit.navigation
 
 import GettingStarted
 import OnboardingScreen
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold // Import Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController // Import rememberNavController untuk NavHost nested
 import com.kotlin.connectit.data.api.TokenManager
+import com.kotlin.connectit.ui.home.CustomBottomNavBar // Import CustomBottomNavBar
+import com.kotlin.connectit.ui.home.HomeScreenContent // Import HomeScreenContent
+import com.kotlin.connectit.ui.home.Profile // Import Profile
+import com.kotlin.connectit.ui.home.SearchScreen // <--- Pastikan import SearchScreen yang baru
 import com.kotlin.connectit.ui.login.LoginScreen
 import com.kotlin.connectit.ui.profile.CompleteProfileScreen
 import com.kotlin.connectit.ui.register.RegisterScreen
 
-object AppDestinations {
-    const val ONBOARDING = "onboarding"
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-    const val COMPLETE_PROFILE = "complete_profile"
-    const val GETTING_STARTED = "getting_started"
-    const val HOME = "home"
-}
-
+// Anda bisa menghapus definisi SearchScreen di sini karena sudah ada di file terpisah
+/*
 @Composable
-fun HomeScreen(navController: NavHostController) { // Tambahkan NavController jika perlu navigasi dari home
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Welcome to Home Screen!")
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = {
-                TokenManager.clearToken() // Hapus token
-                navController.navigate(AppDestinations.LOGIN) {
-                    popUpTo(navController.graph.findStartDestination().id) { // popUpTo start destination of graph
-                        inclusive = true
-                    }
-                    launchSingleTop = true // Hindari multiple copies of login screen
-                }
-            }) {
-                Text("Logout")
-            }
-        }
+fun SearchScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF191A1F))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Search Screen Content", color = Color.White, fontSize = 24.sp)
     }
 }
-
+*/
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = AppDestinations.ONBOARDING) {
+    NavHost(navController = navController, startDestination = AppDestinations.GETTING_STARTED) {
+
+        composable(AppDestinations.GETTING_STARTED) {
+            GettingStarted(
+                onGetStartedClick = {
+                    println("Get started button clicked, navigating to onboarding")
+                    navController.navigate(AppDestinations.ONBOARDING) {
+                        popUpTo(AppDestinations.GETTING_STARTED) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         composable(AppDestinations.ONBOARDING) {
             OnboardingScreen(
                 onBoardingClick = {
-                    navController.navigate(AppDestinations.LOGIN) {
-                        popUpTo(AppDestinations.ONBOARDING) { inclusive = true }
+                    println("Onboarding finished, navigating to main app flow (navbar)")
+                    navController.navigate(AppDestinations.MAIN_APP_FLOW) {
+                        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )
@@ -70,8 +81,8 @@ fun AppNavGraph(navController: NavHostController) {
         composable(AppDestinations.LOGIN) {
             LoginScreen(
                 onSuccessfulLogin = {
-                    println("Login successful, navigating to home")
-                    navController.navigate(AppDestinations.HOME) {
+                    println("Login successful, navigating to main app flow")
+                    navController.navigate(AppDestinations.MAIN_APP_FLOW) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             inclusive = true
                         }
@@ -87,19 +98,16 @@ fun AppNavGraph(navController: NavHostController) {
 
         composable(AppDestinations.REGISTER) {
             RegisterScreen(
-                // Menggunakan callback onSuccessfulRegister yang baru
                 onSuccessfulRegister = {
                     println("Register successful, navigating to complete_profile")
                     navController.navigate(AppDestinations.COMPLETE_PROFILE) {
-                        // Anda mungkin ingin popUpTo register agar tidak bisa kembali ke register
-                        // setelah melengkapi profil, atau biarkan untuk alur "kembali" dari complete profile
                         popUpTo(AppDestinations.REGISTER) { inclusive = true }
                     }
                 },
                 onLoginClick = {
                     println("Login link clicked, navigating to login")
                     navController.navigate(AppDestinations.LOGIN) {
-                        popUpTo(AppDestinations.LOGIN) { inclusive = true } // Kembali ke login, jangan buat instance baru
+                        popUpTo(AppDestinations.LOGIN) { inclusive = true }
                     }
                 }
             )
@@ -108,19 +116,17 @@ fun AppNavGraph(navController: NavHostController) {
         composable(AppDestinations.COMPLETE_PROFILE) {
             CompleteProfileScreen(
                 onProfileCompleted = {
-                    println("Profile completed, navigating to home")
-                    navController.navigate(AppDestinations.HOME) {
-                        // Setelah profil selesai, hapus Register dan CompleteProfile dari backstack
-                        popUpTo(navController.graph.findStartDestination().id) { // Kembali ke root awal graph
+                    println("Profile completed, navigating to main app flow")
+                    navController.navigate(AppDestinations.MAIN_APP_FLOW) {
+                        popUpTo(navController.graph.findStartDestination().id) {
                             inclusive = true
                         }
                         launchSingleTop = true
                     }
                 },
                 onSkipOrNavigate = {
-                    println("Skip complete profile, navigating to home")
-                    navController.navigate(AppDestinations.HOME) {
-                        // Sama seperti di atas, anggap skip juga final
+                    println("Skip complete profile, navigating to main app flow")
+                    navController.navigate(AppDestinations.MAIN_APP_FLOW) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             inclusive = true
                         }
@@ -129,24 +135,36 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onBackClick = {
                     println("Back clicked from complete profile")
-                    navController.popBackStack() // Kembali ke layar sebelumnya (Register)
+                    navController.popBackStack()
                 }
             )
         }
 
-        composable(AppDestinations.GETTING_STARTED) {
-            GettingStarted(
-                onGetStartedClick = {
-                    println("Get started button clicked, navigating to onboarding")
-                    navController.navigate(AppDestinations.ONBOARDING) {
-                        popUpTo(AppDestinations.GETTING_STARTED) { inclusive = true }
+        composable(AppDestinations.MAIN_APP_FLOW) {
+            val bottomNavController = rememberNavController() // NavController untuk Bottom Nav
+
+            Scaffold(
+                bottomBar = {
+                    CustomBottomNavBar(navController = bottomNavController)
+                },
+                contentWindowInsets = WindowInsets(0.dp) // Atau WindowInsets.systemBars
+            ) { paddingValues ->
+                NavHost(
+                    navController = bottomNavController,
+                    startDestination = Screen.Home.route, // Start di tab Home
+                    modifier = Modifier.padding(paddingValues) // Gunakan paddingValues dari Scaffold
+                ) {
+                    composable(Screen.Home.route) {
+                        HomeScreenContent() // Gunakan konten Home Screen yang sudah dipisah
+                    }
+                    composable(Screen.Profile.route) {
+                        Profile() // Gunakan Composable Profile Anda
+                    }
+                    composable(Screen.Search.route) {
+                        SearchScreen() // Gunakan Composable Search Anda
                     }
                 }
-            )
-        }
-
-        composable(AppDestinations.HOME) {
-            HomeScreen(navController)
+            }
         }
     }
 }
