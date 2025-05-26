@@ -55,11 +55,10 @@ fun CompleteProfileScreen(
                 Toast.makeText(context, result.message ?: "Update profil gagal", Toast.LENGTH_LONG).show()
                 viewModel.consumeUpdateResult()
             }
-            null -> { /* Initial or consumed */ }
+            null -> {  }
         }
     }
 
-    // Handle general error messages
     LaunchedEffect(key1 = uiState.errorMessage) {
         uiState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
@@ -78,18 +77,18 @@ fun CompleteProfileScreen(
                 },
                 actions = {
                     TextButton(onClick = onSkipOrNavigate) {
-                        Text("Skip", color = Color(0xFFBB86FC)) // Warna ungu muda untuk "Skip"
+                        Text("Skip", color = Color(0xFFBB86FC))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF191A1F) // Warna background TopAppBar
+                    containerColor = Color(0xFF191A1F)
                 )
             )
         },
-        containerColor = Color(0xFF191A1F) // Warna background utama
+        containerColor = Color(0xFF191A1F)
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (uiState.isLoading && !uiState.isProfileLoaded) { // Loading data awal
+            if (uiState.isLoading && !uiState.isProfileLoaded) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                     color = Color(0xFF8B5CF6)
@@ -99,16 +98,15 @@ fun CompleteProfileScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 24.dp)
-                        .padding(top = 24.dp), // Padding atas setelah TopAppBar
+                        .padding(top = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Placeholder Foto Profil
                     Box(
                         contentAlignment = Alignment.BottomEnd,
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape)
-                            .background(Color.DarkGray) // Warna placeholder
+                            .background(Color.DarkGray)
                             .border(2.dp, Color(0xFF8B5CF6), CircleShape)
                             .clickable { /* TODO: Handle ganti foto */ }
                     ) {

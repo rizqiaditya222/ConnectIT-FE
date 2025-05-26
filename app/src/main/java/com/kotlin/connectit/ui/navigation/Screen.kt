@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    object Home : Screen("home_tab", "Home", Icons.Default.Home) // Tambahkan ikon
-    object Profile : Screen("profile_tab", "Profile", Icons.Default.Person) // Tambahkan ikon
-    object Search : Screen("search_tab", "Search", Icons.Default.Search) // Tambahkan ikon
+    object Home : Screen("home_tab", "Home", Icons.Default.Home)
+    object Profile : Screen("profile_tab", "Profile", Icons.Default.Person)
+    object Search : Screen("search_tab", "Search", Icons.Default.Search)
 }

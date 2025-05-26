@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold // Import Scaffold
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,32 +24,16 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController // Import rememberNavController untuk NavHost nested
+import androidx.navigation.compose.rememberNavController
 import com.kotlin.connectit.data.api.TokenManager
-import com.kotlin.connectit.ui.home.CustomBottomNavBar // Import CustomBottomNavBar
-import com.kotlin.connectit.ui.home.HomeScreenContent // Import HomeScreenContent
-import com.kotlin.connectit.ui.home.Profile // Import Profile
-import com.kotlin.connectit.ui.home.SearchScreen // <--- Pastikan import SearchScreen yang baru
+import com.kotlin.connectit.ui.home.CustomBottomNavBar
+import com.kotlin.connectit.ui.home.HomeScreenContent
+import com.kotlin.connectit.ui.home.Profile
+import com.kotlin.connectit.ui.home.SearchScreen
 import com.kotlin.connectit.ui.login.LoginScreen
 import com.kotlin.connectit.ui.profile.CompleteProfileScreen
 import com.kotlin.connectit.ui.register.RegisterScreen
 
-// Anda bisa menghapus definisi SearchScreen di sini karena sudah ada di file terpisah
-/*
-@Composable
-fun SearchScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF191A1F))
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("Search Screen Content", color = Color.White, fontSize = 24.sp)
-    }
-}
-*/
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
@@ -158,10 +142,10 @@ fun AppNavGraph(navController: NavHostController) {
                         HomeScreenContent() // Gunakan konten Home Screen yang sudah dipisah
                     }
                     composable(Screen.Profile.route) {
-                        Profile() // Gunakan Composable Profile Anda
+                        Profile()
                     }
                     composable(Screen.Search.route) {
-                        SearchScreen() // Gunakan Composable Search Anda
+                        SearchScreen()
                     }
                 }
             }
