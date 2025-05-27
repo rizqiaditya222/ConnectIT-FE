@@ -67,7 +67,7 @@ fun LoginScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .weight(1f) // Sesuaikan weight jika perlu
+                    .weight(1f)
                     .fillMaxWidth()
             ) {
                 Image(
