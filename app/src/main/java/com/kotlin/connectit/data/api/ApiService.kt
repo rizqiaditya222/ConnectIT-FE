@@ -84,12 +84,12 @@ interface ApiService {
     @GET("api/search/posts")
     suspend fun searchPosts(
         @Query("query") searchQuery: String
-    ): Response<List<GetAllPostsResponse>>
+    ): Response<GetAllPostsResponse>
 
     @GET("api/search/users")
     suspend fun searchUsers(
         @Query("query") searchQuery: String
-    ): Response<List<UserData>>
+    ): Response<GetAllUsersResponse>
 
     @GET("api/users")
     suspend fun getAllUsers(): Response<GetAllUsersResponse>

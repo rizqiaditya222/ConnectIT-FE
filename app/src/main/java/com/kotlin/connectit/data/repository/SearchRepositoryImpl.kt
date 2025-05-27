@@ -2,6 +2,7 @@ package com.kotlin.connectit.data.repository
 
 import com.kotlin.connectit.data.api.ApiService
 import com.kotlin.connectit.data.api.response.GetAllPostsResponse
+import com.kotlin.connectit.data.api.response.GetAllUsersResponse
 import com.kotlin.connectit.data.api.response.UserData
 import com.kotlin.connectit.domain.repository.SearchRepository
 import com.kotlin.connectit.util.ResultWrapper
@@ -12,11 +13,11 @@ class SearchRepositoryImpl @Inject constructor(
     private val apiService: ApiService
 ) : SearchRepository {
 
-    override suspend fun searchPosts(searchQuery: String): ResultWrapper<List<GetAllPostsResponse>> {
+    override suspend fun searchPosts(searchQuery: String): ResultWrapper<GetAllPostsResponse> {
         return safeApiCall { apiService.searchPosts(searchQuery) }
     }
 
-    override suspend fun searchUsers(searchQuery: String): ResultWrapper<List<UserData>> {
+    override suspend fun searchUsers(searchQuery: String): ResultWrapper<GetAllUsersResponse> {
         return safeApiCall { apiService.searchUsers(searchQuery) }
     }
 }

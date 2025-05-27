@@ -1,7 +1,9 @@
 package com.kotlin.connectit.ui.home
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,9 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.*
@@ -23,11 +29,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.kotlin.connectit.R // Pastikan ini mengarah ke folder res Anda
 
 data class Post(
@@ -36,108 +44,118 @@ data class Post(
     val username: String,
     val caption: String,
     val timestamp: String,
-    val profileImageRes: Int, // Mengubah nama agar lebih jelas
+    val profileImageRes: Int,
     val postImageRes: List<Int>? = null
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreenContent() { // Ubah nama Composable ini menjadi HomeScreenContent
-    var selectedTab by remember { mutableStateOf("Post") } // Catatan: state ini mungkin tidak lagi relevan jika ada bottom nav utama
+fun HomeScreenContent(
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    val posts = listOf(
-        Post(1, "Andreas Bagas", "@andreas", "Koding hari ini terasa seru!", "2d", R.drawable.illustration1, listOf(R.drawable.header, R.drawable.bubble_login)),
-        Post(2, "Elgin Brian", "@elgin", "Menikmati secangkir kopi hangat.", "1d", R.drawable.bubble_login),
-        Post(3, "Budi Santoso", "@budi", "Ide-ide baru bermunculan!", "5h", R.drawable.bubble_login),
-        Post(4, "Citra Dewi", "@citra", "Desain UI/UX memang menantang.", "3h", R.drawable.bubble_login),
-        Post(5, "Dian Pratama", "@dian", "Belajar Compose itu asyik!", "1h", R.drawable.bubble_login),
-        Post(6, "Eko Susilo", "@eko", "Jangan menyerah pada tantangan.", "30m", R.drawable.bubble_login),
-        Post(7, "Fina Amelia", "@fina", "Akhirnya liburan tiba!", "10m", R.drawable.bubble_login)
-    )
-
-    Column(
-        modifier = Modifier
-            .background(Color(0xFF191A1F))
-            .fillMaxSize()
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.header),
-            contentDescription = "Header Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth().offset(y = -8.dp)
-        )
-        Row (modifier = Modifier.padding(horizontal = 24.dp).offset(y = -32.dp), verticalAlignment = Alignment.CenterVertically) {
-            Card(modifier = Modifier.size(48.dp).clip(CircleShape)) {
-                Image(
-                    painter = painterResource(R.drawable.bubble_register),
-                    contentDescription = "profile image"
-                )
-            }
-            OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                singleLine = true,
-                shape = RoundedCornerShape(32.dp),
-                placeholder = {
-                    Text(
-                        "Search...",
-                        color = Color.Gray,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = "Search icon",
-                        tint = Color(0xFF8B5CF6),
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth().padding(start = 8.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color(0xFF1F222A),
-                    unfocusedContainerColor = Color(0xFF1F222A),
-                    disabledContainerColor = Color(0xFF2A2A2F),
-                    cursorColor = Color(0xFF8B5CF6),
-                    focusedIndicatorColor = Color(0xFF8B5CF6),
-                    unfocusedIndicatorColor = Color(0xFF1F222A),
-                )
-            )
+    LaunchedEffect(key1 = uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.consumeErrorMessage()
         }
+    }
 
+    // Menggunakan Scaffold untuk struktur dengan TopAppBar (opsional, bisa dihilangkan jika TopAppBar diatur oleh NavHost utama)
+    Scaffold (
+        topBar = {
+            Surface ( // Memberi background dan elevasi pada TopAppBar kustom
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 4.dp, // Elevasi untuk bayangan
+                color = Color(0xFF191A1F) // Warna background TopAppBar
+            ) {
+                Column { // Kolom untuk header image dan search bar
+                    // Header Image (jika ingin tetap ada di atas)
+                    Image(
+                        painter = painterResource(id = R.drawable.header), // Pastikan drawable ini ada
+                        contentDescription = "Header Banner",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(80.dp) // Tinggi header dikurangi
+                    )
+                    // Profile & Search Bar Section
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // TODO: Ganti dengan AsyncImage untuk foto profil pengguna yang login, dari ViewModel lain atau User Preferences
+                        Image(
+                            painter = painterResource(R.drawable.bubble_login),
+                            contentDescription = "Current User Profile Image",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(1.5.dp, Color(0xFF8B5CF6), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        OutlinedTextField(
+                            value = uiState.searchText,
+                            onValueChange = { viewModel.onSearchTextChanged(it) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(25.dp),
+                            placeholder = { Text("Search ConnectIT...", color = Color.Gray, fontSize = 14.sp) },
+                            trailingIcon = {
+                                Icon(Icons.Filled.Search, contentDescription = "Search", tint = Color(0xFF8B5CF6))
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedContainerColor = Color(0xFF2A2A2F),
+                                unfocusedContainerColor = Color(0xFF2A2A2F),
+                                cursorColor = Color(0xFF8B5CF6),
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            )
+                        )
+                    }
+                }
+            }
+        },
+        containerColor = Color(0xFF191A1F) // Background utama Scaffold
+    ) { innerPadding -> // innerPadding dari Scaffold
 
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(Color.White.copy(alpha = 0.2f))
-        )
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
+                .padding(innerPadding)
+                .fillMaxSize()
         ) {
-            items(posts) { post ->
-                PostItem(
-                    fullName = post.fullName,
-                    username = post.username,
-                    caption = post.caption,
-                    timestamp = post.timestamp,
-                    profileImageRes = post.profileImageRes, // Gunakan profileImageRes
-                    postImageRes = post.postImageRes,
-                    showMoreOptions = false, // Di Home Screen, biasanya tidak ada opsi edit/hapus
-                    onMoreOptionsClick = {}
-                )
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF8B5CF6))
+                }
+            } else if (uiState.posts.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp) // Padding untuk list
+                ) {
+                    items(uiState.posts, key = { feedItem -> feedItem.postId }) { feedItem ->
+                        PostItem(
+                            postData = feedItem,
+                            showMoreOptions = true,
+                            onMoreOptionsClick = { postId ->
+                                viewModel.handlePostMoreOptions(postId)
+                            }
+                        )
+                    }
+                }
+            } else if (uiState.errorMessage == null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No posts to show yet. Be the first!", color = Color.Gray, fontSize = 16.sp)
+                }
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewHomeScreenContent() { // Ubah nama preview juga
-    HomeScreenContent()
 }
