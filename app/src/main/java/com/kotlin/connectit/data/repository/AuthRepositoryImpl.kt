@@ -1,6 +1,7 @@
 package com.kotlin.connectit.data.repository
 
 import com.kotlin.connectit.data.api.ApiService
+import com.kotlin.connectit.data.api.TokenManager
 import com.kotlin.connectit.data.api.request.ChangePasswordRequest
 import com.kotlin.connectit.data.api.request.LoginRequest
 import com.kotlin.connectit.data.api.request.RegisterRequest
@@ -22,14 +23,33 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun loginUser(loginRequest: LoginRequest): ResultWrapper<LoginResponse> {
-        return safeApiCall { apiService.loginUser(loginRequest) }
+        val result = safeApiCall { apiService.loginUser(loginRequest) }
+
+        if (result is ResultWrapper.Success) {
+            result.data.data?.token?.let { token ->
+                if (token.isNotBlank()) {
+                    TokenManager.saveToken(token)
+                }
+            }
+        }
+        return result
     }
 
     override suspend fun getCurrentUser(): ResultWrapper<CurrentUserResponse> {
-        return safeApiCall { apiService.getCurrentUser() }
+        val token = TokenManager.getToken()
+        if (token.isNullOrBlank()) {
+            return ResultWrapper.Error(message = "Akses ditolak: Token tidak ditemukan.", code = 401)
+        }
+        val authHeader = "$token"
+        return safeApiCall { apiService.getCurrentUser(authHeader) }
     }
 
     override suspend fun changePassword(changePasswordRequest: ChangePasswordRequest): ResultWrapper<MessageResponse> {
-        return safeApiCall { apiService.changePassword(changePasswordRequest) }
+        val token = TokenManager.getToken()
+        if (token.isNullOrBlank()) {
+            return ResultWrapper.Error(message = "Akses ditolak: Token tidak ditemukan.", code = 401)
+        }
+        val authHeader = "$token"
+        return safeApiCall { apiService.changePassword(authHeader, changePasswordRequest) }
     }
 }

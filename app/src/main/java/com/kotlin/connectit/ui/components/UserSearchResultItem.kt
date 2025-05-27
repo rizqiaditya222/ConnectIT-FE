@@ -5,9 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
+// import androidx.compose.material3.ListItem // Tidak digunakan
+// import androidx.compose.material3.ListItemDefaults // Tidak digunakan
+// import androidx.compose.material3.MaterialTheme // Tidak digunakan
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,8 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.kotlin.connectit.R // Pastikan R.drawable.avatar_placeholder ada
+import com.kotlin.connectit.R // Pastikan R.drawable.bubble_profile ada
 import com.kotlin.connectit.data.api.response.UserData // Impor UserData dari API
+
+// URL default untuk gambar profil jika tidak ada URL dari backend
+private const val DEFAULT_PROFILE_IMAGE_URL = "https://i.pinimg.com/474x/81/8a/1b/818a1b89a57c2ee0fb7619b95e11aebd.jpg"
 
 @Composable
 fun UserSearchResultItem(
@@ -36,9 +39,11 @@ fun UserSearchResultItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = null, // UserData Anda belum memiliki profileImageUrl
-                placeholder = painterResource(id = R.drawable.bubble_login),
-                error = painterResource(id = R.drawable.bubble_login),
+                // Gunakan profileImageUrl dari UserData jika ada dan tidak kosong,
+                // jika tidak, gunakan URL default dari internet.
+                model = if (userData.profileImageUrl.isNullOrBlank()) DEFAULT_PROFILE_IMAGE_URL else userData.profileImageUrl,
+                placeholder = painterResource(id = R.drawable.bubble_profile), // Menggunakan bubble_profile sebagai placeholder
+                error = painterResource(id = R.drawable.bubble_profile), // Menggunakan bubble_profile sebagai error fallback
                 contentDescription = "${userData.username}'s profile picture",
                 modifier = Modifier
                     .size(48.dp)

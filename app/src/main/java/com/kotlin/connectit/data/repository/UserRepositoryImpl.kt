@@ -1,6 +1,7 @@
 package com.kotlin.connectit.data.repository
 
 import com.kotlin.connectit.data.api.ApiService
+import com.kotlin.connectit.data.api.TokenManager
 import com.kotlin.connectit.data.api.request.UpdateUsernameRequest
 import com.kotlin.connectit.data.api.response.GetAllUsersResponse
 import com.kotlin.connectit.data.api.response.GetUserByIdResponse
@@ -19,7 +20,12 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateAuthenticatedUser(updateUsernameRequest: UpdateUsernameRequest): ResultWrapper<UpdateUserResponse> {
-        return safeApiCall { apiService.updateAuthenticatedUser(updateUsernameRequest) }
+        val token = TokenManager.getToken()
+        if (token.isNullOrBlank()) {
+            return ResultWrapper.Error(message = "Akses ditolak: Token tidak ditemukan untuk update pengguna.", code = 401)
+        }
+        val authHeader = "$token"
+        return safeApiCall { apiService.updateAuthenticatedUser(authHeader, updateUsernameRequest) }
     }
 
     override suspend fun getUserById(userId: String): ResultWrapper<GetUserByIdResponse> {

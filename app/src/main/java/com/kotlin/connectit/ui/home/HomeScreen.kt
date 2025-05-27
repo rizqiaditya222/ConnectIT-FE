@@ -1,28 +1,26 @@
 package com.kotlin.connectit.ui.home
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image // Tetap diperlukan untuk header banner
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+// import androidx.compose.material3.SheetState // Tidak digunakan secara langsung di sini
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,30 +29,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.kotlin.connectit.R // Pastikan ini mengarah ke folder res Anda
+import coil.compose.AsyncImage // Import AsyncImage
+import com.kotlin.connectit.R
+import com.kotlin.connectit.util.ResultWrapper
+import kotlinx.coroutines.launch
 
-data class Post(
-    val id: Int,
-    val fullName: String,
-    val username: String,
-    val caption: String,
-    val timestamp: String,
-    val profileImageRes: Int,
-    val postImageRes: List<Int>? = null
-)
+// URL default untuk gambar profil jika tidak ada URL dari backend
+private const val DEFAULT_PROFILE_IMAGE_URL = "https://i.pinimg.com/474x/81/8a/1b/818a1b89a57c2ee0fb7619b95e11aebd.jpg"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenContent(
     viewModel: HomeViewModel = hiltViewModel(),
+    onNavigateToUserProfile: (userId: String) -> Unit,
+    onNavigateToEditPost: (postId: String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(key1 = uiState.errorMessage) {
         uiState.errorMessage?.let {
@@ -63,39 +59,58 @@ fun HomeScreenContent(
         }
     }
 
-    // Menggunakan Scaffold untuk struktur dengan TopAppBar (opsional, bisa dihilangkan jika TopAppBar diatur oleh NavHost utama)
+    LaunchedEffect(key1 = uiState.deletePostResult) {
+        when (val result = uiState.deletePostResult) {
+            is ResultWrapper.Success -> {
+                Toast.makeText(context, result.data.data?.message ?: "Post berhasil dihapus", Toast.LENGTH_SHORT).show()
+            }
+            is ResultWrapper.Error -> {
+                Toast.makeText(context, result.message ?: "Gagal menghapus post", Toast.LENGTH_LONG).show()
+            }
+            null -> {}
+        }
+        viewModel.consumeDeletePostResult()
+    }
+
+
     Scaffold (
         topBar = {
-            Surface ( // Memberi background dan elevasi pada TopAppBar kustom
+            Surface (
                 modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 4.dp, // Elevasi untuk bayangan
-                color = Color(0xFF191A1F) // Warna background TopAppBar
+                shadowElevation = 4.dp,
+                color = Color(0xFF191A1F)
             ) {
-                Column { // Kolom untuk header image dan search bar
-                    // Header Image (jika ingin tetap ada di atas)
+                Column {
                     Image(
-                        painter = painterResource(id = R.drawable.header), // Pastikan drawable ini ada
+                        painter = painterResource(id = R.drawable.header),
                         contentDescription = "Header Banner",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(80.dp) // Tinggi header dikurangi
+                            .height(80.dp)
                     )
-                    // Profile & Search Bar Section
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // TODO: Ganti dengan AsyncImage untuk foto profil pengguna yang login, dari ViewModel lain atau User Preferences
-                        Image(
-                            painter = painterResource(R.drawable.bubble_login),
+                        // Cari URL gambar profil pengguna yang login dari uiState.posts atau dari state user yang login jika ada
+                        // Untuk sementara, kita asumsikan uiState.loggedInUser?.profileImageUrl ada, atau ambil dari post pertama jika ada
+                        // Idealnya, HomeViewModel memiliki state sendiri untuk UserData yang login.
+                        val loggedInUserFromPosts = uiState.posts.firstOrNull { it.userId == uiState.loggedInUserId }
+                        val loggedInUserProfileImageUrl = loggedInUserFromPosts?.userProfileImageUrl // Ini sudah ditransformasi di ViewModel
+
+                        AsyncImage( // Menggunakan AsyncImage untuk foto profil pengguna yang login
+                            model = if (loggedInUserProfileImageUrl.isNullOrBlank()) DEFAULT_PROFILE_IMAGE_URL else loggedInUserProfileImageUrl,
+                            placeholder = painterResource(R.drawable.bubble_profile),
+                            error = painterResource(R.drawable.bubble_profile),
                             contentDescription = "Current User Profile Image",
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .border(1.5.dp, Color(0xFF8B5CF6), CircleShape)
+                                .border(1.5.dp, Color(0xFF8B5CF6), CircleShape),
+                            contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         OutlinedTextField(
@@ -124,38 +139,74 @@ fun HomeScreenContent(
                 }
             }
         },
-        containerColor = Color(0xFF191A1F) // Background utama Scaffold
-    ) { innerPadding -> // innerPadding dari Scaffold
+        containerColor = Color(0xFF191A1F)
+    ) { innerPadding ->
 
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            if (uiState.isLoading) {
+            if (uiState.isLoading && uiState.posts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFF8B5CF6))
                 }
             } else if (uiState.posts.isNotEmpty()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp) // Padding untuk list
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp)
                 ) {
                     items(uiState.posts, key = { feedItem -> feedItem.postId }) { feedItem ->
                         PostItem(
                             postData = feedItem,
-                            showMoreOptions = true,
-                            onMoreOptionsClick = { postId ->
-                                viewModel.handlePostMoreOptions(postId)
-                            }
+                            onMoreOptionsClick = { selectedPost ->
+                                viewModel.triggerPostOptions(selectedPost)
+                            },
+                            onUsernameClick = { userId ->
+                                onNavigateToUserProfile(userId)
+                            },
+                            currentLoggedInUserId = uiState.loggedInUserId
                         )
                     }
                 }
-            } else if (uiState.errorMessage == null) {
+            } else if (!uiState.isLoading && uiState.errorMessage == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No posts to show yet. Be the first!", color = Color.Gray, fontSize = 16.sp)
                 }
             }
+        }
+    }
+
+    if (uiState.showBottomSheet && uiState.selectedPostForOptions != null) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.onDismissBottomSheet() },
+            sheetState = sheetState,
+            containerColor = Color(0xFF2A2A2F),
+            contentColor = Color.White
+        ) {
+            PostOptionsBottomSheetContent(
+                selectedPostCaption = uiState.selectedPostForOptions?.caption ?: "Selected Post",
+                onEditClick = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            viewModel.onDismissBottomSheet()
+                            uiState.selectedPostForOptions?.postId?.let { postId ->
+                                onNavigateToEditPost(postId)
+                            }
+                        }
+                    }
+                },
+                onDeleteClick = {
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            viewModel.onDismissBottomSheet()
+                            uiState.selectedPostForOptions?.postId?.let { postId ->
+                                viewModel.attemptDeletePost(postId)
+                            }
+                        }
+                    }
+                }
+            )
         }
     }
 }

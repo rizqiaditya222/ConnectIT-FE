@@ -1,6 +1,14 @@
+package com.kotlin.connectit.ui.gettingstarted
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,10 +46,10 @@ fun GettingStarted(
                     .fillMaxWidth(1f)
                     .align(Alignment.TopStart)
                     .offset(x = (-24).dp)
-
             )
+
             Column(
-                modifier = Modifier.width(250.dp),
+                modifier = Modifier.padding(horizontal = 40.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -61,10 +69,9 @@ fun GettingStarted(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

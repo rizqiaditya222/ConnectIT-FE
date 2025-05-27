@@ -14,5 +14,7 @@ data class UserData(
     val id: String,
     @SerializedName("updated_at")
     val updatedAt: String,
-    val username: String
+    val username: String,
+    @SerializedName("profile_image_url")
+    val profileImageUrl: String?
 )

@@ -17,13 +17,14 @@ import com.kotlin.connectit.data.api.response.MessageResponse
 import com.kotlin.connectit.data.api.response.RegisterResponse
 import com.kotlin.connectit.data.api.response.UpdatePostResponse
 import com.kotlin.connectit.data.api.response.UpdateUserResponse
-import com.kotlin.connectit.data.api.response.UserData
+// import com.kotlin.connectit.data.api.response.UserData // Tidak digunakan langsung di parameter/return type ApiService
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header // ✨ Impor anotasi Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -43,10 +44,13 @@ interface ApiService {
     ): Response<LoginResponse>
 
     @GET("api/auth/current-user")
-    suspend fun getCurrentUser(): Response<CurrentUserResponse>
+    suspend fun getCurrentUser(
+        @Header("Authorization") authorization: String
+    ): Response<CurrentUserResponse>
 
     @PUT("api/auth/change-password")
     suspend fun changePassword(
+        @Header("Authorization") authorization: String,
         @Body changePasswordRequest: ChangePasswordRequest
     ): Response<MessageResponse>
 
@@ -66,19 +70,22 @@ interface ApiService {
     @Multipart
     @POST("api/posts")
     suspend fun createPost(
+        @Header("Authorization") authorization: String,
         @Part("caption") caption: RequestBody,
         @Part image: MultipartBody.Part?
     ): Response<CreatePostResponse>
 
     @PUT("api/posts/{postId}")
     suspend fun updatePostCaption(
+        @Header("Authorization") authorization: String,
         @Path("postId") postId: String,
         @Body updateCaptionRequest: UpdateCaptionRequest
     ): Response<UpdatePostResponse>
 
     @DELETE("api/posts/{postId}")
     suspend fun deletePost(
-        @Path("postId") postId: String 
+        @Header("Authorization") authorization: String,
+        @Path("postId") postId: String
     ): Response<DeletePostResponse>
 
     @GET("api/search/posts")
@@ -96,6 +103,7 @@ interface ApiService {
 
     @PUT("api/users")
     suspend fun updateAuthenticatedUser(
+        @Header("Authorization") authorization: String,
         @Body updateUsernameRequest: UpdateUsernameRequest
     ): Response<UpdateUserResponse>
 

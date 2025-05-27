@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.kotlin.connectit.data.api.TokenManager
 import com.kotlin.connectit.navigation.AppNavGraph
 import com.kotlin.connectit.ui.theme.ConnectITTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             ConnectITTheme {
+                TokenManager.init(applicationContext)
                 val systemUiController = rememberSystemUiController()
                 val useDarkIcons = false
                 SideEffect {

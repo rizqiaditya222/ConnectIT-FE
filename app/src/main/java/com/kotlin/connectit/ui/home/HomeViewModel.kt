@@ -2,17 +2,20 @@ package com.kotlin.connectit.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kotlin.connectit.data.api.response.DeletePostResponse
+import com.kotlin.connectit.domain.repository.AuthRepository
 import com.kotlin.connectit.domain.repository.PostRepository
 import com.kotlin.connectit.domain.repository.UserRepository
+import com.kotlin.connectit.util.DataRefreshTrigger // Import DataRefreshTrigger
 import com.kotlin.connectit.util.ResultWrapper
 import com.kotlin.connectit.data.api.response.PostItem as ApiPostItem
-import com.kotlin.connectit.data.api.response.UserData as ApiUserData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest // Menggunakan collectLatest untuk re-subscribe jika perlu
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -25,13 +28,19 @@ data class HomeUiState(
     val posts: List<UiDisplayPost> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val searchText: String = ""
+    val searchText: String = "", // Mungkin tidak digunakan aktif di Home, lebih ke SearchScreen
+    val loggedInUserId: String? = null,
+    val showBottomSheet: Boolean = false,
+    val selectedPostForOptions: UiDisplayPost? = null,
+    val deletePostResult: ResultWrapper<DeletePostResponse>? = null
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val postRepository: PostRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val authRepository: AuthRepository,
+    private val dataRefreshTrigger: DataRefreshTrigger // Injeksi DataRefreshTrigger
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -41,29 +50,47 @@ class HomeViewModel @Inject constructor(
     private val NEW_IMAGE_DOMAIN = "connect-it.elginbrian.com"
 
     init {
-        loadPosts()
+        fetchLoggedInUserId() // Ambil ID user yang login
+        loadPosts() // Muat post saat inisialisasi
+
+        // Observasi perubahan data dari DataRefreshTrigger
+        viewModelScope.launch {
+            dataRefreshTrigger.onDataChanged.collectLatest {
+                loadPosts() // Muat ulang post ketika ada trigger
+            }
+        }
+    }
+
+    private fun fetchLoggedInUserId() {
+        viewModelScope.launch {
+            when (val result = authRepository.getCurrentUser()) {
+                is ResultWrapper.Success -> {
+                    _uiState.update { it.copy(loggedInUserId = result.data.data?.id) }
+                }
+                is ResultWrapper.Error -> {
+                    System.err.println("HomeViewModel: Failed to get loggedInUserId: ${result.message}")
+                    _uiState.update { it.copy(loggedInUserId = null, errorMessage = if (result.code == 401) "Sesi berakhir, silakan login kembali." else result.message) }
+                }
+            }
+        }
     }
 
     fun onSearchTextChanged(text: String) {
         _uiState.update { it.copy(searchText = text) }
-        // TODO: Implement search logic
+        // Logika filter atau search bisa ditambahkan di sini jika search bar di Home aktif
     }
 
-    // Fungsi helper untuk transformasi URL
     private fun transformImageUrl(originalUrl: String?): String? {
         if (originalUrl.isNullOrBlank()) {
             return originalUrl
         }
-        // Cek apakah URL mengandung domain lama dan ganti jika ada
         if (originalUrl.contains(OLD_IMAGE_DOMAIN)) {
-            // Coba ganti dengan mempertahankan scheme (http/https)
-            // dan default ke https untuk domain baru jika scheme lama adalah http
             return when {
                 originalUrl.startsWith("https://$OLD_IMAGE_DOMAIN") ->
                     originalUrl.replaceFirst("https://$OLD_IMAGE_DOMAIN", "https://$NEW_IMAGE_DOMAIN")
                 originalUrl.startsWith("http://$OLD_IMAGE_DOMAIN") ->
-                    originalUrl.replaceFirst("http://$OLD_IMAGE_DOMAIN", "https://$NEW_IMAGE_DOMAIN") // Selalu ke HTTPS untuk domain baru
-                else -> // Fallback jika scheme tidak standar atau tidak ada, tapi domain cocok
+                    originalUrl.replaceFirst("http://$OLD_IMAGE_DOMAIN", "https://$NEW_IMAGE_DOMAIN")
+                else ->
                     originalUrl.replaceFirst(OLD_IMAGE_DOMAIN, NEW_IMAGE_DOMAIN)
             }
         }
@@ -82,14 +109,13 @@ class HomeViewModel @Inject constructor(
                             var userEmailDisplay = "N/A"
                             var fetchedUserProfileUrl: String? = null
 
-                            if (apiPost.userId.isNotBlank()) { // Menggunakan apiPost.userId sesuai struktur Anda
+                            if (apiPost.userId.isNotBlank()) {
                                 when (val userResult = userRepository.getUserById(apiPost.userId)) {
                                     is ResultWrapper.Success -> {
                                         userResult.data.data?.let { userData ->
                                             userNameDisplay = userData.username
                                             userEmailDisplay = userData.email
-                                            // Jika UserData nantinya memiliki field profileImageUrl, ambil di sini:
-                                            // fetchedUserProfileUrl = userData.profileImageUrl
+                                            fetchedUserProfileUrl = userData.profileImageUrl
                                         }
                                     }
                                     is ResultWrapper.Error -> {
@@ -108,7 +134,7 @@ class HomeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            posts = uiDisplayPostsDeferred.awaitAll()
+                            posts = uiDisplayPostsDeferred.awaitAll().sortedByDescending { post -> post.postUpdatedAt }
                         )
                     }
                 }
@@ -130,84 +156,83 @@ class HomeViewModel @Inject constructor(
         userEmail: String,
         fetchedUserProfileImageUrl: String?
     ): UiDisplayPost {
-        // ✨ Terapkan transformasi URL di sini ✨
         val transformedUserProfileImageUrl = transformImageUrl(fetchedUserProfileImageUrl)
-        val transformedPostImageUrl = transformImageUrl(apiPost.imageUrl) // Menggunakan apiPost.imageUrl sesuai struktur Anda
+        val transformedPostImageUrl = transformImageUrl(apiPost.imageUrl)
 
         return UiDisplayPost(
             postId = apiPost.id,
-            userId = apiPost.userId, // Menggunakan apiPost.userId sesuai struktur Anda
+            userId = apiPost.userId,
             username = username,
             userEmail = userEmail,
             caption = apiPost.caption,
             userProfileImageUrl = transformedUserProfileImageUrl,
             postImageUrl = transformedPostImageUrl,
             postCreatedAt = formatApiTimestampToRelative(apiPost.createdAt),
-            postUpdatedAt = if (apiPost.updatedAt != null && apiPost.createdAt != apiPost.updatedAt) {
-                formatApiTimestampToRelative(apiPost.updatedAt)
-            } else {
-                formatApiTimestampToRelative(apiPost.createdAt) // Tampilkan createdAt jika updatedAt sama atau null
-            }
+            postUpdatedAt = formatApiTimestampToRelative(apiPost.updatedAt ?: apiPost.createdAt) // Pastikan ada fallback dan format
         )
     }
 
     private fun formatApiTimestampToRelative(apiTimestamp: String?): String {
         if (apiTimestamp.isNullOrBlank()) return "Beberapa waktu lalu"
         return try {
-            // Mendeteksi format timestamp yang mungkin berbeda
             val supportedFormats = listOf(
                 SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault()),
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()) // Format tanpa microseconds
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()),
+                SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             )
-
             var date: Date? = null
             for (format in supportedFormats) {
-                format.timeZone = TimeZone.getTimeZone("UTC") // Pastikan parsing sebagai UTC
-                try {
-                    date = format.parse(apiTimestamp)
-                    if (date != null) break
-                } catch (e: Exception) {
-                    // Lanjutkan ke format berikutnya
-                }
+                format.timeZone = TimeZone.getTimeZone("UTC")
+                try { date = format.parse(apiTimestamp); if (date != null) break } catch (e: Exception) { }
             }
-
-            if (date == null) return apiTimestamp
-
-            val now = System.currentTimeMillis()
-            val diff = now - date.time
-
-            val seconds = diff / 1000
-            val minutes = seconds / 60
-            val hours = minutes / 60
-            val days = hours / 24
-            val weeks = days / 7
-            val months = days / 30 // Perkiraan
-            val years = days / 365 // Perkiraan
-
+            if (date == null) { System.err.println("Gagal mem-parse tanggal (HomeVM): $apiTimestamp"); return apiTimestamp }
+            val now = System.currentTimeMillis(); val diff = now - date.time
+            if (diff < 0) return "baru saja"
+            val seconds = diff / 1000; val minutes = seconds / 60; val hours = minutes / 60; val days = hours / 24
+            val weeks = days / 7; val months = days / 30; val years = days / 365
             when {
-                years > 0 -> "${years}y"
-                months > 0 -> "${months}mo"
-                weeks > 0 -> "${weeks}w"
-                days > 1 -> "${days}d"
-                days == 1L -> "1d"
-                hours > 1 -> "${hours}h"
-                hours == 1L -> "1h"
-                minutes > 1 -> "${minutes}m"
-                minutes == 1L -> "1m"
-                seconds > 5 -> "${seconds}s"
-                else -> "baru saja"
+                years > 0 -> "${years}y"; months > 0 -> "${months}mo"; weeks > 0 -> "${weeks}w"
+                days > 1 -> "${days}d"; days == 1L -> "1d"; hours > 1 -> "${hours}h"; hours == 1L -> "1h"
+                minutes > 1 -> "${minutes}m"; minutes == 1L -> "1m"; seconds > 5 -> "${seconds}s"; else -> "baru saja"
             }
-        } catch (e: Exception) {
-            apiTimestamp
+        } catch (e: Exception) { System.err.println("Error format timestamp (HomeVM): $apiTimestamp, Error: ${e.message}"); apiTimestamp }
+    }
+
+    fun onShowBottomSheet(post: UiDisplayPost) {
+        _uiState.update { it.copy(showBottomSheet = true, selectedPostForOptions = post) }
+    }
+
+    fun onDismissBottomSheet() {
+        _uiState.update { it.copy(showBottomSheet = false, selectedPostForOptions = null) }
+    }
+
+    fun attemptDeletePost(postId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) } // Bisa tambahkan loading state untuk delete
+            val result = postRepository.deletePost(postId)
+            if (result is ResultWrapper.Success) {
+                dataRefreshTrigger.triggerRefresh() // Picu refresh global
+            } else if (result is ResultWrapper.Error) {
+                _uiState.update { it.copy(errorMessage = result.message ?: "Gagal menghapus post") }
+            }
+            // Hasil spesifik (sukses/gagal) untuk UI Toast/Snackbar
+            _uiState.update { it.copy(deletePostResult = result, isLoading = false) }
         }
+    }
+
+    fun consumeDeletePostResult() {
+        _uiState.update { it.copy(deletePostResult = null) }
     }
 
     fun consumeErrorMessage() {
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    fun handlePostMoreOptions(postId: String) {
-        println("More options clicked for post ID: $postId")
-        _uiState.update { it.copy(errorMessage = "More options for $postId (Not implemented)") }
+    fun triggerPostOptions(post: UiDisplayPost) {
+        if (post.userId == _uiState.value.loggedInUserId) {
+            onShowBottomSheet(post)
+        } else {
+            _uiState.update { it.copy(errorMessage = "Anda hanya dapat mengelola post Anda sendiri.") }
+        }
     }
 }

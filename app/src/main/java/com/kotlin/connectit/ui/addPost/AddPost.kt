@@ -1,209 +1,218 @@
-package com.kotlin.connectit.ui.home
+package com.kotlin.connectit.ui.addpost
 
-import androidx.compose.foundation.Image
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow // Import LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Close // Import Close icon for remove button
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale // Import ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kotlin.connectit.R
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.snapshots.SnapshotStateList // Import SnapshotStateList for mutableStateListOf
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.kotlin.connectit.util.ResultWrapper //
+import org.json.JSONObject // Untuk parsing errorBody
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddPost() {
+fun AddPostScreen(
+    viewModel: AddPostViewModel = hiltViewModel(),
+    onPostCreatedSuccessfully: () -> Unit,
+    onBackClick: () -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    var selectedTab by remember { mutableStateOf("Post") }
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    var showBottomSheet by remember { mutableStateOf(false) }
-    var selectedPostForOptions by remember { mutableStateOf<Post?>(null) }
-    var postText by remember { mutableStateOf("") }
-//    val selectedImages = remember { mutableStateListOf<Int>() }
-    val selectedImages = remember {
-        mutableStateListOf(
-            R.drawable.illustration1,
-            R.drawable.illustration2
-        )
-    }
-    Column(
-        modifier = Modifier
-            .background(Color(0xFF191A1F))
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    "Create Post",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.White,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-
-            Button(
-                onClick = { /* Handle post creation */ },
-                modifier = Modifier.height(36.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4C00A8)),
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Text(
-                    text = "Post",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+    val pickMediaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri: Uri? ->
+            viewModel.onImageSelected(uri)
         }
+    )
 
-        if (selectedImages.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp) // Space between images
-            ) {
-                items(selectedImages) { imageResId ->
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.DarkGray)
+    LaunchedEffect(key1 = uiState.createPostResult) {
+        when (val result = uiState.createPostResult) {
+            is ResultWrapper.Success -> {
+                Toast.makeText(context, result.data.status ?: "Post berhasil dibuat!", Toast.LENGTH_SHORT).show()
+                viewModel.clearForm()
+                onPostCreatedSuccessfully()
+                viewModel.consumeCreatePostResult()
+            }
+            is ResultWrapper.Error -> {
+                val errorMsg = result.message ?: "Gagal membuat post"
+                var detailedError = result.errorBody?.let { body ->
+                    try {
+                        // Coba parse sebagai JSON jika backend mengirim error terstruktur
+                        val jsonError = JSONObject(body)
+                        // Cari field "message" atau "error" di JSON, atau tampilkan body mentah
+                        jsonError.optString("message", null) ?: jsonError.optString("error", null) ?: body.take(100) // Batasi panjang body mentah
+                    } catch (e: Exception) {
+                        body.take(100) // Jika bukan JSON atau gagal parse, tampilkan body mentah (dibatasi)
+                    }
+                } ?: ""
+
+                if (detailedError.equals(errorMsg, ignoreCase = true)) detailedError = ""
+
+
+                val fullErrorMessage = "$errorMsg ${if(detailedError.isNotBlank()) "($detailedError)" else ""}"
+                Toast.makeText(context, fullErrorMessage, Toast.LENGTH_LONG).show()
+                viewModel.consumeCreatePostResult()
+            }
+            null -> {}
+        }
+    }
+
+    LaunchedEffect(key1 = uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.consumeErrorMessage()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Post", color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                },
+                actions = {
+                    Button(
+                        onClick = { viewModel.attemptCreatePost() },
+                        enabled = !uiState.isLoading,
+                        modifier = Modifier.heightIn(min = 36.dp).padding(end = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B5CF6)),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = imageResId),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(2.dp)
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF4C00A8))
-                        ) {
-                            IconButton(
-                                onClick = { selectedImages.remove(imageResId) },
-                                modifier = Modifier.fillMaxSize().padding()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Remove image",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text("Post", color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
                     }
-
-                }
-            }
-        }
-
-
-        OutlinedTextField(
-            value = postText,
-            onValueChange = { postText = it },
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF191A1F))
+            )
+        },
+        containerColor = Color(0xFF191A1F)
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
-                .height(200.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF1F222A),
-                unfocusedContainerColor = Color(0xFF1F222A),
-                disabledContainerColor = Color(0xFF2A2A2F),
-                cursorColor = Color(0xFF8B5CF6),
-                focusedBorderColor = Color(0xFF8B5CF6),
-                unfocusedBorderColor = Color(0xFF1F222A),
-            ),
-            placeholder = {
-                Text(
-                    text = "What's on your mind?",
-                    color = Color.Gray,
-                    fontSize = 16.sp,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            },
-            singleLine = false,
-            maxLines = Int.MAX_VALUE
-        )
-        Button(
-            onClick = {
-                selectedImages.add(R.drawable.illustration1) // Add a sample image
-            },
-            modifier = Modifier.height(32.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4C00A8)),
-            shape = RoundedCornerShape(24.dp)
+                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 16.dp)
         ) {
-            Row (verticalAlignment = Alignment.CenterVertically){
-                Icon(
-                    imageVector = Icons.Default.Create,
-                    contentDescription = "Add Picture",
-                    tint = Color.White,
-                    modifier = Modifier.size(12.dp)
-                )
-                Text(
-                    text = "Picture",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Normal,
-                    modifier = Modifier.padding(start = 5.dp)
-                )
+            OutlinedTextField(
+                value = uiState.caption,
+                onValueChange = { viewModel.onCaptionChanged(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 150.dp),
+                placeholder = { Text("What's on your mind?", color = Color.Gray) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedContainerColor = Color(0xFF2A2A2F),
+                    unfocusedContainerColor = Color(0xFF2A2A2F),
+                    cursorColor = Color(0xFF8B5CF6),
+                    focusedBorderColor = Color(0xFF8B5CF6).copy(alpha = 0.8f),
+                    unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f),
+                ),
+                shape = RoundedCornerShape(8.dp),
+                maxLines = 10
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            uiState.selectedImageUri?.let { uri ->
+                Text("Selected Image:", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.padding(bottom = 8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.DarkGray)
+                ) {
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = "Selected image preview",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    IconButton(
+                        onClick = { viewModel.onImageSelected(null) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Remove image",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            OutlinedButton(
+                onClick = {
+                    pickMediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, Color(0xFF8B5CF6))
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add Picture Icon",
+                        tint = Color(0xFF8B5CF6),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = if (uiState.selectedImageUri == null) "Add Picture" else "Change Picture",
+                        color = Color(0xFF8B5CF6),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, backgroundColor = 0xFF191A1F)
 @Composable
-fun AddPostPreview() {
-
-    AddPost()
+fun PreviewAddPostScreen() {
+    MaterialTheme {
+        AddPostScreen(
+            onPostCreatedSuccessfully = {},
+            onBackClick = {}
+        )
+    }
 }

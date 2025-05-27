@@ -47,9 +47,9 @@ object NetworkModule {
         authInterceptor: AuthInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
-            .addInterceptor(authInterceptor) // Menggunakan AuthInterceptor Anda
-            .addInterceptor(loggingInterceptor) // Menambahkan logging interceptor
-            .connectTimeout(30, TimeUnit.SECONDS) // Mengambil timeout dari ApiConfig Anda
+            .addInterceptor(authInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()

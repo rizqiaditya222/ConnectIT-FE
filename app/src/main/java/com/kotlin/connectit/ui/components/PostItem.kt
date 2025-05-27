@@ -1,8 +1,9 @@
 package com.kotlin.connectit.ui.home // Sesuaikan dengan package Anda
 
-import androidx.compose.foundation.Image
+// import androidx.compose.foundation.Image // Tidak digunakan secara langsung
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,37 +28,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.kotlin.connectit.R // Pastikan import R sudah benar
+import com.kotlin.connectit.R
 
-// Diasumsikan UiDisplayPost data class sudah ada:
-// data class UiDisplayPost(
-//    val postId: String,
-//    val userId: String,
-//    val username: String,
-//    val userEmail: String,
-//    val caption: String?,
-//    val userProfileImageUrl: String?,
-//    val postImageUrl: String?,
-//    val postCreatedAt: String,
-//    val postUpdatedAt: String
-// )
+// URL default untuk gambar profil jika tidak ada URL dari backend
+private const val DEFAULT_PROFILE_IMAGE_URL = "https://i.pinimg.com/474x/81/8a/1b/818a1b89a57c2ee0fb7619b95e11aebd.jpg"
 
 @Composable
 fun PostImageItemView(
     imageUrl: String?,
     contentDescription: String?,
-    modifier: Modifier = Modifier // Modifier akan datang dari PostItem
+    modifier: Modifier = Modifier
 ) {
     if (!imageUrl.isNullOrBlank()) {
         AsyncImage(
-            model = imageUrl,
+            model = imageUrl, // URL gambar post
             contentDescription = contentDescription,
-            placeholder = painterResource(id = R.drawable.bubble_login), // Placeholder yang lebih sesuai
-            error = painterResource(id = R.drawable.bubble_login),       // Placeholder yang lebih sesuai
-            modifier = modifier // Modifier ini sekarang TIDAK akan memiliki batasan tinggi dari PostItem
-                // .clip(RoundedCornerShape(12.dp)) // Kliping bisa dilakukan di sini atau di pemanggil
+            placeholder = painterResource(id = R.drawable.bubble_login), // Placeholder untuk gambar post
+            error = painterResource(id = R.drawable.bubble_login), // Fallback untuk gambar post
+            modifier = modifier
                 .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
-            contentScale = ContentScale.FillWidth // ✨ KUNCI: Sesuaikan tinggi berdasarkan lebar & aspect ratio
+            contentScale = ContentScale.FillWidth // Atau ContentScale.Crop sesuai kebutuhan
         )
     }
 }
@@ -66,41 +55,46 @@ fun PostImageItemView(
 @Composable
 fun PostItem(
     postData: UiDisplayPost,
-    showMoreOptions: Boolean = true,
-    onMoreOptionsClick: (postId: String) -> Unit,
+    onMoreOptionsClick: (post: UiDisplayPost) -> Unit,
+    onUsernameClick: (userId: String) -> Unit,
+    currentLoggedInUserId: String?,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp), // Padding antar card sedikit ditambah
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF202125))
     ) {
-        Column(modifier = Modifier.padding(bottom = 12.dp)) { // Padding bawah untuk konten dalam card
-            // Header: Foto Profil, Nama, Timestamp, Tombol Opsi
+        Column(modifier = Modifier.padding(bottom = 12.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 8.dp), // Sesuaikan padding header
+                    .padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 AsyncImage(
-                    model = postData.userProfileImageUrl,
+                    model = if (postData.userProfileImageUrl.isNullOrBlank()) DEFAULT_PROFILE_IMAGE_URL else postData.userProfileImageUrl,
                     contentDescription = "${postData.username}'s profile picture",
-                    placeholder = painterResource(id = R.drawable.bubble_profile), // Placeholder Avatar
-                    error = painterResource(id = R.drawable.bubble_profile),       // Placeholder Avatar
+                    placeholder = painterResource(id = R.drawable.bubble_profile),
+                    error = painterResource(id = R.drawable.bubble_profile),
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .border(1.5.dp, Color(0xFF8B5CF6), CircleShape),
+                        .border(1.5.dp, Color(0xFF8B5CF6), CircleShape)
+                        .clickable { onUsernameClick(postData.userId) },
                     contentScale = ContentScale.Crop
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onUsernameClick(postData.userId) }
+                ) {
                     Text(
                         text = postData.username,
                         fontSize = 15.sp,
@@ -109,10 +103,8 @@ fun PostItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    // Email tidak ditampilkan lagi di sini untuk tampilan yang lebih bersih
                 }
 
-                // Column untuk Timestamp dan Tombol Opsi agar bisa bertumpuk jika perlu
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = postData.postCreatedAt,
@@ -129,9 +121,9 @@ fun PostItem(
                     }
                 }
 
-                if (showMoreOptions) {
+                if (postData.userId == currentLoggedInUserId) {
                     IconButton(
-                        onClick = { onMoreOptionsClick(postData.postId) },
+                        onClick = { onMoreOptionsClick(postData) },
                         modifier = Modifier.size(32.dp).padding(start = 4.dp)
                     ) {
                         Icon(
@@ -140,10 +132,11 @@ fun PostItem(
                             tint = Color.Gray
                         )
                     }
+                } else {
+                    Spacer(modifier = Modifier.size(32.dp).padding(start = 4.dp))
                 }
             }
 
-            // Caption
             if (!postData.caption.isNullOrBlank()) {
                 Text(
                     text = postData.caption,
@@ -152,33 +145,30 @@ fun PostItem(
                     color = Color.White.copy(alpha = 0.90f),
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
-                        .padding(bottom = if (postData.postImageUrl != null) 10.dp else 0.dp), // Padding bawah sebelum gambar
+                        .padding(bottom = if (postData.postImageUrl != null) 10.dp else 0.dp),
                     maxLines = 10,
                     overflow = TextOverflow.Ellipsis
                 )
             } else {
-                // Jika tidak ada caption tapi ada gambar, beri sedikit jarak atas untuk gambar
                 if (postData.postImageUrl != null) {
                     Spacer(modifier = Modifier.height(10.dp))
                 }
             }
 
-            // Gambar Post
             if (!postData.postImageUrl.isNullOrBlank()) {
                 PostImageItemView(
                     imageUrl = postData.postImageUrl,
                     contentDescription = "Post image by ${postData.username}",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp) // Padding kecil agar clip RoundedCorner terlihat
-                        .clip(RoundedCornerShape(12.dp)) // Kliping bentuk sudut di sini
-                    // HAPUS .heightIn() atau .height() dari sini agar aspect ratio terjaga
+                        .padding(horizontal = 4.dp) // Padding agar gambar tidak terlalu mepet ke tepi card
+                        .clip(RoundedCornerShape(12.dp)) // Bentuk rounded untuk gambar post
+                        .aspectRatio(16f / 9f) // Contoh aspect ratio, sesuaikan jika perlu
                 )
             }
         }
     }
 }
-
 
 @Preview(showBackground = true, backgroundColor = 0xFF191A1F)
 @Composable
@@ -189,31 +179,18 @@ fun PreviewPostItem() {
         username = "Elgin Brian",
         userEmail = "elgin.brian@example.com",
         caption = "Ini adalah contoh caption yang cukup panjang untuk melihat bagaimana teks akan ditampilkan. Aspect ratio gambar seharusnya terjaga sekarang.",
-        userProfileImageUrl = null,
-        postImageUrl = "https://via.placeholder.com/600x400", // Ganti dengan URL gambar aspek ratio berbeda untuk tes
+        userProfileImageUrl = null, // Akan menggunakan DEFAULT_PROFILE_IMAGE_URL
+        postImageUrl = "https://via.placeholder.com/600x400", // Contoh URL gambar post
         postCreatedAt = "2h ago",
         postUpdatedAt = "2h ago"
-    )
-    val dummyPostWithoutImage = UiDisplayPost(
-        postId = "124",
-        userId = "user002",
-        username = "Jane Doe",
-        userEmail = "jane.doe@example.com",
-        caption = "Contoh post kedua tanpa gambar.",
-        userProfileImageUrl = "https://via.placeholder.com/100",
-        postImageUrl = null,
-        postCreatedAt = "3h ago",
-        postUpdatedAt = "3h ago"
     )
     MaterialTheme {
         Column(Modifier.background(Color(0xFF191A1F)).padding(vertical=8.dp)) {
             PostItem(
                 postData = dummyPostWithImage,
-                onMoreOptionsClick = {}
-            )
-            PostItem(
-                postData = dummyPostWithoutImage,
-                onMoreOptionsClick = {}
+                onMoreOptionsClick = {},
+                onUsernameClick = {},
+                currentLoggedInUserId = "user001" // Asumsikan ini post milik user yang login
             )
         }
     }

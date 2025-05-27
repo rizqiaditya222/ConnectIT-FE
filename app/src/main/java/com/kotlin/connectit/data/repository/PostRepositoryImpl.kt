@@ -1,6 +1,7 @@
 package com.kotlin.connectit.data.repository
 
 import com.kotlin.connectit.data.api.ApiService
+import com.kotlin.connectit.data.api.TokenManager // ✨ Impor TokenManager
 import com.kotlin.connectit.data.api.request.UpdateCaptionRequest
 import com.kotlin.connectit.data.api.response.CreatePostResponse
 import com.kotlin.connectit.data.api.response.DeletePostResponse
@@ -31,14 +32,29 @@ class PostRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createPost(caption: RequestBody, image: MultipartBody.Part?): ResultWrapper<CreatePostResponse> {
-        return safeApiCall { apiService.createPost(caption, image) }
+        val token = TokenManager.getToken()
+        if (token.isNullOrBlank()) {
+            return ResultWrapper.Error(message = "Akses ditolak: Token tidak ditemukan untuk membuat post.", code = 401)
+        }
+        val authHeader = "$token"
+        return safeApiCall { apiService.createPost(authHeader, caption, image) }
     }
 
     override suspend fun updatePostCaption(postId: String, updateCaptionRequest: UpdateCaptionRequest): ResultWrapper<UpdatePostResponse> {
-        return safeApiCall { apiService.updatePostCaption(postId, updateCaptionRequest) }
+        val token = TokenManager.getToken()
+        if (token.isNullOrBlank()) {
+            return ResultWrapper.Error(message = "Akses ditolak: Token tidak ditemukan untuk update post.", code = 401)
+        }
+        val authHeader = "$token"
+        return safeApiCall { apiService.updatePostCaption(authHeader, postId, updateCaptionRequest) }
     }
 
     override suspend fun deletePost(postId: String): ResultWrapper<DeletePostResponse> {
-        return safeApiCall { apiService.deletePost(postId) }
+        val token = TokenManager.getToken()
+        if (token.isNullOrBlank()) {
+            return ResultWrapper.Error(message = "Akses ditolak: Token tidak ditemukan untuk menghapus post.", code = 401)
+        }
+        val authHeader = "$token"
+        return safeApiCall { apiService.deletePost(authHeader, postId) }
     }
 }
